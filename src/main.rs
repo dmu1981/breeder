@@ -1,0 +1,124 @@
+use clap::{Parser, Subcommand};
+use genetics::*;
+use rand_distr::Normal;
+use serde::{Serialize, Deserialize};
+use std::time::Duration;
+use ndarray::*;
+
+//----------------------------------------------
+
+#[derive(Serialize, Deserialize, Clone, Debug)]
+struct MyPayload {
+    botnet: BotNet,
+}
+
+fn rand(min: u32, max: u32) -> u32 {
+    min + rand::random::<u32>() % (max - min)
+}
+
+async fn spawn_new_genes(genepool: &mut GenePool<MyPayload>) -> Result<(), GenomeError> {
+  
+  for _ in 0..genepool.population_size {
+        genepool
+            .add_genome(Genome::new(0, MyPayload {
+                botnet: BotNet::new(7, 50, 4),
+            }))
+            .await?;
+    }
+    
+    Ok(())
+}
+
+fn breed_next_generation(
+    genes: &Vec<Genome<MyPayload>>,
+) -> Result<Vec<Genome<MyPayload>>, GenomeError> {
+    println!("Breeding next generation!");
+
+    let mut new_genes = Vec::<Genome<MyPayload>>::new();
+
+    let mut total_fitness: f32 = 0.0;
+    
+    // Only preserve the 10 fittest individuals
+    for x
+     in &genes[0..15] {
+        total_fitness += x.message.fitness.unwrap();
+        println!(
+            "Genome {} has fitness {}",
+            x.message.uuid,
+            x.message.fitness.unwrap()
+        );
+
+        // Keep this network as it is
+        new_genes.push(Genome::new(
+          x.message.generation + 1,
+          MyPayload {
+            botnet: x.message.payload.botnet.clone(),
+          }));
+
+        // Create 5 variants of it
+        for variant in 0..9 {
+            let dist = Normal::new(0.0, 0.0005 + (variant as f32) * 0.0005).unwrap();
+            new_genes.push(Genome::new(
+              x.message.generation + 1,
+              MyPayload {
+                botnet: x.message.payload.botnet.variant(&dist),
+              }));
+        }
+    }
+    println!("Total fitness was {}", total_fitness);
+
+    Ok(new_genes)
+}
+
+
+#[derive(Parser)]
+#[command(author, version, about, long_about = None)]
+struct Cli {
+   #[command(subcommand)]
+    command: Commands,
+}
+
+#[derive(Subcommand)]
+enum Commands {
+    /// Resets the queue and spawns new genes of generation 0
+    Reset,
+    /// Runs the monitor and breeds new genes if current generation is complete
+    Run
+}
+
+#[tokio::main]
+async fn main() {
+    let cli = Cli::parse();
+
+    
+
+    let v: f32 = 250.0 + rand::random::<f32>() * 1750.0;
+    tokio::time::sleep(Duration::from_millis(v as u64)).await;
+
+    let population_size = 150;
+
+    match cli.command {
+      Commands::Reset => {
+        let mut genepool = GenePool::<MyPayload>::new(population_size, FitnessSortingOrder::LessIsBetter).unwrap();
+        genepool.empty_pool().unwrap();
+        spawn_new_genes(&mut genepool).await.unwrap(); 
+      },
+      Commands::Run => {
+        let mut handles: Vec<tokio::task::JoinHandle<Result<(), GenomeError>>> = vec![];
+
+        handles.push(tokio::spawn(async move {
+            //let population_handler = MyPopulationHandler::new();
+            let mut genepool = GenePool::<MyPayload>::new(population_size, FitnessSortingOrder::LessIsBetter).unwrap();
+    
+            genepool.monitor(breed_next_generation).await?;
+    
+            Ok(())
+        }));
+
+        futures::future::join_all(handles).await;
+      }
+    }
+    
+
+    
+}

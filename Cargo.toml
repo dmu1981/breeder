@@ -1,0 +1,18 @@
+[package]
+name = "rabbit-mq-test"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+genetics = { path = "../genetics" }
+ndarray = { path = "../ndarray" }
+serde = { version = "1.0", features = ["derive"] }
+tokio = { version = "1.17", features = ["full"] } 
+rand = "0.8.5"
+clap = { version = "4.0.27", features = ["derive"] }
+rand_distr = "0.4.3"
+serde_yaml = "0.9"
+serde_json = "1.0"
+futures = "0.3.25"
