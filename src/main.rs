@@ -74,6 +74,9 @@ fn breed_next_generation(
 #[derive(Parser)]
 #[command(author, version, about, long_about = None)]
 struct Cli {
+  #[arg(short, long, default_value = "amqp://guest:guest@127.0.0.1:5672")]
+    pool: String,
+
    #[command(subcommand)]
     command: Commands,
 }
@@ -90,7 +93,7 @@ enum Commands {
 async fn main() {
     let cli = Cli::parse();
 
-    
+    println!("Connecting to pool at {}", cli.pool);
 
     let v: f32 = 250.0 + rand::random::<f32>() * 1750.0;
     tokio::time::sleep(Duration::from_millis(v as u64)).await;
@@ -99,7 +102,7 @@ async fn main() {
 
     match cli.command {
       Commands::Reset => {
-        let mut genepool = GenePool::<MyPayload>::new(population_size, FitnessSortingOrder::LessIsBetter).unwrap();
+        let mut genepool = GenePool::<MyPayload>::new(population_size, FitnessSortingOrder::LessIsBetter, cli.pool).unwrap();
         genepool.empty_pool().unwrap();
         spawn_new_genes(&mut genepool).await.unwrap(); 
       },
@@ -108,7 +111,7 @@ async fn main() {
 
         handles.push(tokio::spawn(async move {
             //let population_handler = MyPopulationHandler::new();
-            let mut genepool = GenePool::<MyPayload>::new(population_size, FitnessSortingOrder::LessIsBetter).unwrap();
+            let mut genepool = GenePool::<MyPayload>::new(population_size, FitnessSortingOrder::LessIsBetter, cli.pool).unwrap();
     
             genepool.monitor(breed_next_generation).await?;
     
