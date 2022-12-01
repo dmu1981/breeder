@@ -21,7 +21,7 @@ async fn spawn_new_genes(genepool: &mut GenePool<MyPayload>) -> Result<(), Genom
   for _ in 0..genepool.population_size {
         genepool
             .add_genome(Genome::new(0, MyPayload {
-                botnet: BotNet::new(7, 50, 4),
+                botnet: BotNet::new(7, 50, 2),
             }))
             .await?;
     }
@@ -40,7 +40,7 @@ fn breed_next_generation(
     
     // Only preserve the 10 fittest individuals
     for x
-     in &genes[0..15] {
+     in &genes[0..25] {
         total_fitness += x.message.fitness.unwrap();
         println!(
             "Genome {} has fitness {}",
@@ -55,9 +55,9 @@ fn breed_next_generation(
             botnet: x.message.payload.botnet.clone(),
           }));
 
-        // Create 5 variants of it
+        // Create 10 variants of it
         for variant in 0..9 {
-            let dist = Normal::new(0.0, 0.0005 + (variant as f32) * 0.0005).unwrap();
+            let dist = Normal::new(0.0, 0.05 + (variant as f32) * 0.005).unwrap();
             new_genes.push(Genome::new(
               x.message.generation + 1,
               MyPayload {
@@ -86,7 +86,9 @@ enum Commands {
     /// Resets the queue and spawns new genes of generation 0
     Reset,
     /// Runs the monitor and breeds new genes if current generation is complete
-    Run
+    Run,
+    /// Dumps all queues to disk without acknowleding them (can continue training afters)
+    Dump,
 }
 
 #[tokio::main]
@@ -98,13 +100,20 @@ async fn main() {
     let v: f32 = 250.0 + rand::random::<f32>() * 1750.0;
     tokio::time::sleep(Duration::from_millis(v as u64)).await;
 
-    let population_size = 150;
+
+    let population_size = 250;
 
     match cli.command {
+      Commands::Dump => {
+        let mut genepool = GenePool::<MyPayload>::new(population_size, FitnessSortingOrder::LessIsBetter, cli.pool).unwrap();
+        genepool.dump().unwrap();
+      },
       Commands::Reset => {
+        println!("RESET DISABLED FOR NOW!");
+        /* 
         let mut genepool = GenePool::<MyPayload>::new(population_size, FitnessSortingOrder::LessIsBetter, cli.pool).unwrap();
         genepool.empty_pool().unwrap();
-        spawn_new_genes(&mut genepool).await.unwrap(); 
+        spawn_new_genes(&mut genepool).await.unwrap(); */
       },
       Commands::Run => {
         let mut handles: Vec<tokio::task::JoinHandle<Result<(), GenomeError>>> = vec![];
