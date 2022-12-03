@@ -4,12 +4,14 @@ use rand_distr::Normal;
 use serde::{Serialize, Deserialize};
 use std::time::Duration;
 use ndarray::*;
+use uuid::Uuid;
 
 //----------------------------------------------
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 struct MyPayload {
     botnet: BotNet,
+    experiment: Uuid,
 }
 
 fn rand(min: u32, max: u32) -> u32 {
@@ -18,10 +20,14 @@ fn rand(min: u32, max: u32) -> u32 {
 
 async fn spawn_new_genes(genepool: &mut GenePool<MyPayload>) -> Result<(), GenomeError> {
   
+  let experiment = Uuid::new_v4();
+  println!("Experiment UUID is {}", experiment);
+
   for _ in 0..genepool.population_size {
         genepool
             .add_genome(Genome::new(0, MyPayload {
-                botnet: BotNet::new(7, 50, 2),
+                botnet: BotNet::new(7, 50, 4),
+                experiment,
             }))
             .await?;
     }
@@ -53,6 +59,7 @@ fn breed_next_generation(
           x.message.generation + 1,
           MyPayload {
             botnet: x.message.payload.botnet.clone(),
+            experiment: x.message.payload.experiment,
           }));
 
         // Create 10 variants of it
@@ -62,6 +69,7 @@ fn breed_next_generation(
               x.message.generation + 1,
               MyPayload {
                 botnet: x.message.payload.botnet.variant(&dist),
+                experiment: x.message.payload.experiment,
               }));
         }
     }
@@ -109,11 +117,11 @@ async fn main() {
         genepool.dump().unwrap();
       },
       Commands::Reset => {
-        println!("RESET DISABLED FOR NOW!");
-        /* 
+        //println!("RESET DISABLED FOR NOW!");
+         
         let mut genepool = GenePool::<MyPayload>::new(population_size, FitnessSortingOrder::LessIsBetter, cli.pool).unwrap();
         genepool.empty_pool().unwrap();
-        spawn_new_genes(&mut genepool).await.unwrap(); */
+        spawn_new_genes(&mut genepool).await.unwrap(); 
       },
       Commands::Run => {
         let mut handles: Vec<tokio::task::JoinHandle<Result<(), GenomeError>>> = vec![];
