@@ -117,11 +117,11 @@ async fn main() {
         genepool.dump().unwrap();
       },
       Commands::Reset => {
-        //println!("RESET DISABLED FOR NOW!");
+        println!("RESET DISABLED FOR NOW!");
          
-        let mut genepool = GenePool::<MyPayload>::new(population_size, FitnessSortingOrder::LessIsBetter, cli.pool).unwrap();
+        /*let mut genepool = GenePool::<MyPayload>::new(population_size, FitnessSortingOrder::LessIsBetter, cli.pool).unwrap();
         genepool.empty_pool().unwrap();
-        spawn_new_genes(&mut genepool).await.unwrap(); 
+        spawn_new_genes(&mut genepool).await.unwrap(); */
       },
       Commands::Run => {
         let mut handles: Vec<tokio::task::JoinHandle<Result<(), GenomeError>>> = vec![];
