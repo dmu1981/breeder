@@ -46,7 +46,7 @@ fn breed_next_generation(
     
     // Only preserve the 10 fittest individuals
     for x
-     in &genes[0..25] {
+     in &genes[0..40] {
         total_fitness += x.message.fitness.unwrap();
         println!(
             "Genome {} has fitness {}",
@@ -63,7 +63,7 @@ fn breed_next_generation(
           }));
 
         // Create 10 variants of it
-        for variant in 0..9 {
+        for variant in 0..14 {
             let dist = Normal::new(0.0, 0.05 + (variant as f32) * 0.005).unwrap();
             new_genes.push(Genome::new(
               x.message.generation + 1,
@@ -77,7 +77,6 @@ fn breed_next_generation(
 
     Ok(new_genes)
 }
-
 
 #[derive(Parser)]
 #[command(author, version, about, long_about = None)]
@@ -109,7 +108,7 @@ async fn main() {
     tokio::time::sleep(Duration::from_millis(v as u64)).await;
 
 
-    let population_size = 250;
+    let population_size = 600;
 
     match cli.command {
       Commands::Dump => {
@@ -117,11 +116,11 @@ async fn main() {
         genepool.dump().unwrap();
       },
       Commands::Reset => {
-        println!("RESET DISABLED FOR NOW!");
+        //println!("RESET DISABLED FOR NOW!");
          
-        /*let mut genepool = GenePool::<MyPayload>::new(population_size, FitnessSortingOrder::LessIsBetter, cli.pool).unwrap();
+        let mut genepool = GenePool::<MyPayload>::new(population_size, FitnessSortingOrder::LessIsBetter, cli.pool).unwrap();
         genepool.empty_pool().unwrap();
-        spawn_new_genes(&mut genepool).await.unwrap(); */
+        spawn_new_genes(&mut genepool).await.unwrap(); 
       },
       Commands::Run => {
         let mut handles: Vec<tokio::task::JoinHandle<Result<(), GenomeError>>> = vec![];
